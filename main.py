@@ -39,6 +39,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     board_width = game_state["board"]["width"]
     board_height = game_state["board"]["height"]
     opponents = game_state["board"]["snakes"]
+    opponents.pop(0)
     food = game_state["board"]["food"]
 
     free_squares = calculate_free_squares(board_height, board_width, my_body, opponents)
@@ -47,6 +48,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     find_safe_moves(board_height, board_width, is_move_safe, my_body, my_head, my_neck, opponents)
     avoid_tunnels(board_height, board_width, is_move_safe, my_body, my_head, opponents)
     avoid_head_on_collision(my_head, opponents, is_move_safe)
+    avoid_adjacent_head_following(my_head, opponents, is_move_safe)
 
     if len(my_body) < target_length:
         food_move = move_towards_food(food, my_head, is_move_safe)
@@ -165,13 +167,36 @@ def avoid_head_on_collision(my_head, opponents, is_move_safe):
     # Prevent head-on collisions with other snakes
     for snake in opponents:
         snake_head = snake["head"]
-        if {"x": my_head["x"], "y": my_head["y"] + 1} == snake_head:
+        potential_next_positions = [
+            {"x": snake_head["x"], "y": snake_head["y"] + 1},  # Snake moving up
+            {"x": snake_head["x"], "y": snake_head["y"] - 1},  # Snake moving down
+            {"x": snake_head["x"] - 1, "y": snake_head["y"]},  # Snake moving left
+            {"x": snake_head["x"] + 1, "y": snake_head["y"]}   # Snake moving right
+        ]
+
+        if {"x": my_head["x"], "y": my_head["y"] + 1} in potential_next_positions:
             is_move_safe["up"] = False
-        if {"x": my_head["x"], "y": my_head["y"] - 1} == snake_head:
+        if {"x": my_head["x"], "y": my_head["y"] - 1} in potential_next_positions:
             is_move_safe["down"] = False
-        if {"x": my_head["x"] - 1, "y": my_head["y"]} == snake_head:
+        if {"x": my_head["x"] - 1, "y": my_head["y"]} in potential_next_positions:
             is_move_safe["left"] = False
-        if {"x": my_head["x"] + 1, "y": my_head["y"]} == snake_head:
+        if {"x": my_head["x"] + 1, "y": my_head["y"]} in potential_next_positions:
+            is_move_safe["right"] = False
+
+def avoid_adjacent_head_following(my_head, opponents, is_move_safe):
+    # Prevent moving directly behind another snake's head
+    for snake in opponents:
+        snake_head = snake["head"]
+        snake_body = snake["body"]
+
+        # Check if my head is directly behind the other snake's head in its movement direction
+        if {"x": my_head["x"], "y": my_head["y"] + 1} == snake_head and {"x": my_head["x"], "y": my_head["y"] + 2} not in snake_body:
+            is_move_safe["up"] = False
+        if {"x": my_head["x"], "y": my_head["y"] - 1} == snake_head and {"x": my_head["x"], "y": my_head["y"] - 2} not in snake_body:
+            is_move_safe["down"] = False
+        if {"x": my_head["x"] - 1, "y": my_head["y"]} == snake_head and {"x": my_head["x"] - 2, "y": my_head["y"]} not in snake_body:
+            is_move_safe["left"] = False
+        if {"x": my_head["x"] + 1, "y": my_head["y"]} == snake_head and {"x": my_head["x"] + 2, "y": my_head["y"]} not in snake_body:
             is_move_safe["right"] = False
 
 # Start server when `python main.py` is run
