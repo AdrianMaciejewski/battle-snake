@@ -46,7 +46,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
     target_length = len(free_squares) // 2
 
     find_safe_moves(board_height, board_width, is_move_safe, my_body, my_head, my_neck, opponents)
-    avoid_tunnels(board_height, board_width, is_move_safe, my_body, my_head, opponents)
     avoid_head_on_collision(my_head, opponents, is_move_safe)
     avoid_adjacent_head_following(my_head, opponents, is_move_safe)
 
@@ -140,28 +139,6 @@ def find_safe_moves(board_height, board_width, is_move_safe, my_body, my_head, m
                 is_move_safe["left"] = False
             if {"x": my_head["x"] + 1, "y": my_head["y"]} == segment:
                 is_move_safe["right"] = False
-
-def avoid_tunnels(board_height, board_width, is_move_safe, my_body, my_head, opponents):
-    # Prevent entering narrow tunnels
-    def is_tunnel(x, y):
-        walls = 0
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            nx, ny = x + dx, y + dy
-            if (nx < 0 or ny < 0 or nx >= board_width or ny >= board_height or
-                {"x": nx, "y": ny} in my_body or
-                any({"x": nx, "y": ny} in snake["body"] for snake in opponents)):
-                walls += 1
-        return walls >= 3  # A tunnel is a square with 3 or more walls around it
-
-    # Check each move for tunnels
-    if is_move_safe["up"] and is_tunnel(my_head["x"], my_head["y"] + 1):
-        is_move_safe["up"] = False
-    if is_move_safe["down"] and is_tunnel(my_head["x"], my_head["y"] - 1):
-        is_move_safe["down"] = False
-    if is_move_safe["left"] and is_tunnel(my_head["x"] - 1, my_head["y"]):
-        is_move_safe["left"] = False
-    if is_move_safe["right"] and is_tunnel(my_head["x"] + 1, my_head["y"]):
-        is_move_safe["right"] = False
 
 def avoid_head_on_collision(my_head, opponents, is_move_safe):
     # Prevent head-on collisions with other snakes
